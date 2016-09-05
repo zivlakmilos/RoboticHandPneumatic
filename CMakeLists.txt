@@ -11,14 +11,14 @@ set(CMAKE_CXX_FLAGS, "${CMAKE_CXX_FLAGS} -std=c++0x")
 # Project source code
 set(SOURCES
     src/main.cpp
-    src/exception.cpp
+    src/zexception.cpp
     src/mainwindow.cpp
     src/whandgesture.cpp
 )
 
 # Headers for MOC
 set(HEADERS
-    include/exception.h
+    include/zexception.h
     include/mainwindow.h
     include/whandgesture.h
 )
