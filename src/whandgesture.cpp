@@ -8,7 +8,9 @@
 using namespace cv;
 
 WHandGesture::WHandGesture(QWidget *parent)
-    : QWidget(parent)
+    : QWidget(parent),
+      m_capture(0),
+      m_mode(ModeSampling)
 {
     /*
      * Setup timer for update frames
@@ -17,11 +19,6 @@ WHandGesture::WHandGesture(QWidget *parent)
     m_tmrFrameUpdater->setInterval(40);    // 4ms
     connect(m_tmrFrameUpdater, SIGNAL(timeout()),
             this, SLOT(updateFrame()));
-    
-    /*
-     * Setup Open CV
-     */
-    m_capture = VideoCapture(0);
     
     /*
      * Setup GUI
@@ -105,6 +102,16 @@ void WHandGesture::updateFrame(void)
     m_capture.read(matOriginal);
     flip(matOriginal, matOriginal, 1);
     
+    switch(m_mode)
+    {
+        case ModeSampling:
+            sampling(matOriginal, matThreshold);
+            break;
+        case ModeGesture:
+            gesture(matOriginal, matThreshold);
+            break;
+    }
+    
     /*
      * Draw image to UI
      */
@@ -119,4 +126,26 @@ void WHandGesture::updateFrame(void)
                               tr("Error:<br />%1").arg(ex.what()),
                               QMessageBox::Ok | QMessageBox::Default);
     }
+}
+
+void WHandGesture::sampling(Mat &matOriginal, Mat &matThreshold)
+{
+    matThreshold = matOriginal.clone();
+    int centerX = matOriginal.cols / 2;
+    int centerY = matOriginal.rows / 2;
+    
+    QVector<Rect> roi;              // Region of interest
+    roi.push_back(Rect(centerX, centerY, SamplingRectangleWidth, SamplingRectangleHeight));
+    roi.push_back(Rect(centerX, centerY - 100, SamplingRectangleWidth, SamplingRectangleHeight));
+    roi.push_back(Rect(centerX, centerY - 200, SamplingRectangleWidth, SamplingRectangleHeight));
+    roi.push_back(Rect(centerX - 100, centerY - 50, SamplingRectangleWidth, SamplingRectangleHeight));
+    roi.push_back(Rect(centerX + 25, centerY - 25, SamplingRectangleWidth, SamplingRectangleHeight));
+    roi.push_back(Rect(centerX + 25, centerY + 25, SamplingRectangleWidth, SamplingRectangleHeight));
+    
+    for(int i = 0; i < roi.size(); i++)
+        rectangle(matOriginal, roi[i], Scalar(255, 0, 0), 2);
+}
+
+void WHandGesture::gesture(Mat &matOriginal, Mat &matThreshold)
+{
 }
