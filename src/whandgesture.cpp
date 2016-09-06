@@ -100,7 +100,9 @@ void WHandGesture::updateFrame(void)
     Mat matThreshold;
     
     m_capture.read(matOriginal);
-    flip(matOriginal, matOriginal, 1);
+    flip(matOriginal, matOriginal, 1);  // Flip image for easyer usage
+    
+    cvtColor(matOriginal, matThreshold, CV_BGR2HSV); // Convert image to hsv format
     
     switch(m_mode)
     {
@@ -117,9 +119,9 @@ void WHandGesture::updateFrame(void)
      */
     try {
         QImage imgOriginal = matToImg(matOriginal);
-        //QImage imgThreshold = matToImg(matThreshold);
+        QImage imgThreshold = matToImg(matThreshold);
         m_lblOriginalImage->setPixmap(QPixmap::fromImage(imgOriginal));
-        //m_lblThresholdImage->setPixmap(QPixmap::fromImage(imgThreshold));
+        m_lblThresholdImage->setPixmap(QPixmap::fromImage(imgThreshold));
     } catch(ZException ex) {
         m_tmrFrameUpdater->stop();
         QMessageBox::critical(this, tr("Error with proccess image"),
@@ -130,11 +132,11 @@ void WHandGesture::updateFrame(void)
 
 void WHandGesture::sampling(Mat &matOriginal, Mat &matThreshold)
 {
-    matThreshold = matOriginal.clone();
     int centerX = matOriginal.cols / 2;
     int centerY = matOriginal.rows / 2;
-    
     QVector<Rect> roi;              // Region of interest
+    QVector<Mat> matRoi;            // Mat of roi
+    
     roi.push_back(Rect(centerX, centerY, SamplingRectangleWidth, SamplingRectangleHeight));
     roi.push_back(Rect(centerX, centerY - 100, SamplingRectangleWidth, SamplingRectangleHeight));
     roi.push_back(Rect(centerX, centerY - 200, SamplingRectangleWidth, SamplingRectangleHeight));
@@ -143,7 +145,47 @@ void WHandGesture::sampling(Mat &matOriginal, Mat &matThreshold)
     roi.push_back(Rect(centerX + 25, centerY + 25, SamplingRectangleWidth, SamplingRectangleHeight));
     
     for(int i = 0; i < roi.size(); i++)
+    {
         rectangle(matOriginal, roi[i], Scalar(255, 0, 0), 2);
+        rectangle(matThreshold, roi[i], Scalar(255, 0, 0), 2);
+        Mat matR = matThreshold(Range(roi[i].x, roi[i].x + roi[i].width),
+                                Range(roi[i].y, roi[i].y + roi[i].height));
+        matRoi.push_back(matR);
+    }
+    
+    colorFromSamples(matRoi);
+}
+
+void WHandGesture::colorFromSamples(QVector<Mat> &matRoi)
+{
+    QVector<int> h;
+    QVector<int> s;
+    QVector<int> v;
+    int i;
+    
+    for(i = 0; i < matRoi.size(); i++)
+    {
+        Mat1b mask(matRoi[i].rows, matRoi[i].cols);
+        
+        h.push_back(mean(matRoi[i], mask)[0]);
+        s.push_back(mean(matRoi[i], mask)[1]);
+        v.push_back(mean(matRoi[i], mask)[2]);
+    }
+    
+    m_color[0] = median(h);
+    m_color[1] = median(s);
+    m_color[2] = median(v);
+}
+
+int WHandGesture::median(QVector<int> &values)
+{
+    int result;
+    qSort(values.begin(), values.end());
+    if(values.size() % 2)
+        result = (values[values.size() / 2] + values[values.size() / 2 + 1]) / 2;
+    else
+        result = values[values.size() / 2 + 1];
+    return result;
 }
 
 void WHandGesture::gesture(Mat &matOriginal, Mat &matThreshold)

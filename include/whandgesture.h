@@ -33,6 +33,8 @@ private:
     QImage matToImg(cv::Mat mat);
     void sampling(cv::Mat &matOriginal, cv::Mat &matThreshold);
     void gesture(cv::Mat &matOriginal, cv::Mat &matThreshold);
+    void colorFromSamples(QVector<cv::Mat> &matRoi);
+    int median(QVector<int> &values);
     
     QLabel *m_lblOriginalImage;
     QLabel *m_lblThresholdImage;
@@ -40,6 +42,7 @@ private:
     
     cv::VideoCapture m_capture;
     Mode m_mode;
+    cv::Scalar m_color;
     
 private slots:
     void updateFrame(void);
