@@ -28,6 +28,9 @@ public:
         SamplingRectangleHeight = 15
     };
     
+protected:
+    void keyPressEvent(QKeyEvent *event);
+    
 private:
     void setupGui(void);
     QImage matToImg(cv::Mat mat);
@@ -42,7 +45,9 @@ private:
     
     cv::VideoCapture m_capture;
     Mode m_mode;
-    cv::Scalar m_color;
+    cv::Scalar m_colorAverage;
+    cv::Scalar m_colorLower;
+    cv::Scalar m_colorUpper;
     
 private slots:
     void updateFrame(void);

@@ -130,6 +130,27 @@ void WHandGesture::updateFrame(void)
     }
 }
 
+void WHandGesture::keyPressEvent(QKeyEvent *event)
+{
+    switch(event->key())
+    {
+        case Qt::Key_Enter:
+            if(m_mode == ModeSampling)
+                m_mode = ModeGesture;
+            else
+                m_mode = ModeSampling;
+            break;
+        case Qt::Key_Space:
+            if(m_mode == ModeGesture)
+            {
+                /*
+                 * TODO: Send signal for catching object
+                 */
+            }
+            break;
+    }
+}
+
 void WHandGesture::sampling(Mat &matOriginal, Mat &matThreshold)
 {
     int centerX = matOriginal.cols / 2;
@@ -153,6 +174,10 @@ void WHandGesture::sampling(Mat &matOriginal, Mat &matThreshold)
         matRoi.push_back(matR);
     }
     
+    rectangle(matThreshold,
+              Rect(0, 0, 50, 50),
+              m_colorAverage, CV_FILLED);
+    
     colorFromSamples(matRoi);
 }
 
@@ -172,9 +197,20 @@ void WHandGesture::colorFromSamples(QVector<Mat> &matRoi)
         v.push_back(mean(matRoi[i], mask)[2]);
     }
     
-    m_color[0] = median(h);
-    m_color[1] = median(s);
-    m_color[2] = median(v);
+    /*
+     * median also sort vectors
+     * if remove sorting in median perform it after if needed
+     */
+    m_colorAverage[0] = median(h);
+    m_colorAverage[1] = median(s);
+    m_colorAverage[2] = median(v);
+    
+    m_colorLower[0] = h[0];
+    m_colorLower[1] = s[0];
+    m_colorLower[2] = v[0];
+    m_colorUpper[0] = h[h.size() - 1];
+    m_colorUpper[1] = s[s.size() - 1];
+    m_colorUpper[2] = v[v.size() - 1];
 }
 
 int WHandGesture::median(QVector<int> &values)
