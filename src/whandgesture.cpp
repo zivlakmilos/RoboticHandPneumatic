@@ -1,5 +1,6 @@
 #include "whandgesture.h"
 
+#include <vector>
 #include <QtGui>
 #include <opencv2/opencv.hpp>
 
@@ -10,7 +11,9 @@ using namespace cv;
 WHandGesture::WHandGesture(QWidget *parent)
     : QWidget(parent),
       m_capture(0),
-      m_mode(ModeSampling)
+      m_mode(ModeSampling),
+      m_lowerColor(12, 30, 80),
+      m_upperColor(7, 40, 80)
 {
     /*
      * Setup timer for update frames
@@ -19,6 +22,8 @@ WHandGesture::WHandGesture(QWidget *parent)
     m_tmrFrameUpdater->setInterval(40);    // 4ms
     connect(m_tmrFrameUpdater, SIGNAL(timeout()),
             this, SLOT(updateFrame()));
+    
+    setFocusPolicy(Qt::StrongFocus);    // For key event
     
     /*
      * Setup GUI
@@ -130,27 +135,6 @@ void WHandGesture::updateFrame(void)
     }
 }
 
-void WHandGesture::keyPressEvent(QKeyEvent *event)
-{
-    switch(event->key())
-    {
-        case Qt::Key_Enter:
-            if(m_mode == ModeSampling)
-                m_mode = ModeGesture;
-            else
-                m_mode = ModeSampling;
-            break;
-        case Qt::Key_Space:
-            if(m_mode == ModeGesture)
-            {
-                /*
-                 * TODO: Send signal for catching object
-                 */
-            }
-            break;
-    }
-}
-
 void WHandGesture::sampling(Mat &matOriginal, Mat &matThreshold)
 {
     int centerX = matOriginal.cols / 2;
@@ -174,56 +158,59 @@ void WHandGesture::sampling(Mat &matOriginal, Mat &matThreshold)
         matRoi.push_back(matR);
     }
     
-    rectangle(matThreshold,
-              Rect(0, 0, 50, 50),
-              m_colorAverage, CV_FILLED);
-    
     colorFromSamples(matRoi);
 }
 
 void WHandGesture::colorFromSamples(QVector<Mat> &matRoi)
 {
-    QVector<int> h;
-    QVector<int> s;
-    QVector<int> v;
-    int i;
-    
-    for(i = 0; i < matRoi.size(); i++)
+    m_color.clear();
+    for(int i = 0; i < matRoi.size(); i++)
     {
         Mat1b mask(matRoi[i].rows, matRoi[i].cols);
-        
-        h.push_back(mean(matRoi[i], mask)[0]);
-        s.push_back(mean(matRoi[i], mask)[1]);
-        v.push_back(mean(matRoi[i], mask)[2]);
+        m_color.push_back(mean(matRoi[i], mask));
     }
-    
-    /*
-     * median also sort vectors
-     * if remove sorting in median perform it after if needed
-     */
-    m_colorAverage[0] = median(h);
-    m_colorAverage[1] = median(s);
-    m_colorAverage[2] = median(v);
-    
-    m_colorLower[0] = h[0];
-    m_colorLower[1] = s[0];
-    m_colorLower[2] = v[0];
-    m_colorUpper[0] = h[h.size() - 1];
-    m_colorUpper[1] = s[s.size() - 1];
-    m_colorUpper[2] = v[v.size() - 1];
-}
-
-int WHandGesture::median(QVector<int> &values)
-{
-    int result;
-    qSort(values.begin(), values.end());
-    if(values.size() % 2)
-        result = (values[values.size() / 2] + values[values.size() / 2 + 1]) / 2;
-    else
-        result = values[values.size() / 2 + 1];
-    return result;
 }
 
 void WHandGesture::gesture(Mat &matOriginal, Mat &matThreshold)
 {
+    makeBinary(matThreshold);
+    findBiggestConture(matThreshold);
+}
+
+void WHandGesture::keyPressEvent(QKeyEvent *event)
+{
+    switch(event->key())
+    {
+        case Qt::Key_Enter:
+        case Qt::Key_Return:
+            if(m_mode == ModeSampling)
+                m_mode = ModeGesture;
+            else
+                m_mode = ModeSampling;
+            break;
+    }
+}
+
+void WHandGesture::makeBinary(Mat &matThreshold)
+{
+    int i;
+    
+    QVector<Mat> matBinarys;
+    for(i = 0; i < m_color.size(); i++)
+    {
+        Scalar lowerColor(m_color[0][0] - m_lowerColor[0],
+                          m_color[0][1] - m_lowerColor[1],
+                          m_color[0][2] - m_lowerColor[2]);
+        Scalar upperColor(m_color[0][0] + m_upperColor[0],
+                          m_color[0][1] + m_upperColor[1],
+                          m_color[0][2] + m_upperColor[2]);
+        matBinarys.push_back(Mat(matThreshold.rows, matThreshold.cols, CV_8U));
+        inRange(matThreshold, lowerColor, upperColor, matBinarys[i]);
+    }
+    
+    matThreshold = matBinarys[0].clone();
+    for(i = 1; i < matBinarys.size(); i++)
+        matThreshold += matBinarys[0];
+    
+    medianBlur(matThreshold, matThreshold, 7);
 }

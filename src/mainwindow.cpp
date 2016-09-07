@@ -14,6 +14,8 @@ MainWindow::MainWindow(QWidget *parent)
     QCoreApplication::setApplicationName("Robotic Hand Pneumatic");
     QCoreApplication::setOrganizationName("ZI");
     
+    setWindowTitle("Robotic Hand Pneumatic");
+    
     setupGui();
 }
 

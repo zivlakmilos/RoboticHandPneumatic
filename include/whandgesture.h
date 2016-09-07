@@ -29,7 +29,7 @@ public:
     };
     
 protected:
-    void keyPressEvent(QKeyEvent *event);
+    virtual void keyPressEvent(QKeyEvent *event);
     
 private:
     void setupGui(void);
@@ -37,7 +37,7 @@ private:
     void sampling(cv::Mat &matOriginal, cv::Mat &matThreshold);
     void gesture(cv::Mat &matOriginal, cv::Mat &matThreshold);
     void colorFromSamples(QVector<cv::Mat> &matRoi);
-    int median(QVector<int> &values);
+    void makeBinary(cv::Mat &matThreshold);
     
     QLabel *m_lblOriginalImage;
     QLabel *m_lblThresholdImage;
@@ -45,9 +45,9 @@ private:
     
     cv::VideoCapture m_capture;
     Mode m_mode;
-    cv::Scalar m_colorAverage;
-    cv::Scalar m_colorLower;
-    cv::Scalar m_colorUpper;
+    QVector<cv::Scalar> m_color;
+    cv::Scalar m_lowerColor;
+    cv::Scalar m_upperColor;
     
 private slots:
     void updateFrame(void);
