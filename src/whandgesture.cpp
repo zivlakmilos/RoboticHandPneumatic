@@ -173,8 +173,16 @@ void WHandGesture::colorFromSamples(QVector<Mat> &matRoi)
 
 void WHandGesture::gesture(Mat &matOriginal, Mat &matThreshold)
 {
+    std::vector<Point> contour;
+    
     makeBinary(matThreshold);
-    findBiggestConture(matThreshold);
+    if(findContour(matThreshold, contour))
+    {
+        std::vector<std::vector<Point> > tmpContours;
+        tmpContours.push_back(contour);
+        drawContours(matOriginal, tmpContours, -1, Scalar(0, 255, 0), 3, 8);
+        rectangle(matOriginal, boundingRect(Mat(contour)), Scalar(255, 0, 0), 3, 8);
+    }
 }
 
 void WHandGesture::keyPressEvent(QKeyEvent *event)
@@ -213,4 +221,36 @@ void WHandGesture::makeBinary(Mat &matThreshold)
         matThreshold += matBinarys[0];
     
     medianBlur(matThreshold, matThreshold, 7);
+}
+
+bool WHandGesture::findContour(Mat &matThreshold, std::vector<Point> &contour)
+{
+    Mat matWorking = matThreshold.clone();
+    std::vector<std::vector<Point> > contours;
+    std::vector<Vec4i> hierarcy;
+    
+    findContours(matWorking, contours, hierarcy, CV_RETR_TREE, CV_CHAIN_APPROX_SIMPLE);
+    
+    int idx = -1;   // Biggest contour
+    for(int i = 0; i < contours.size(); i++)
+    {
+        if(idx < 0)
+        {
+            idx = i;
+            continue;
+        }
+        if(contours[i].size() > contours[idx].size())
+            idx = i;
+    }
+    
+    if(idx < 0)
+        return false;
+    
+    contour.clear();
+    for(int i = 0; i < contours[idx].size(); i++)
+    {
+        contour.push_back(contours[idx][i]);
+    }
+    
+    return true;
 }

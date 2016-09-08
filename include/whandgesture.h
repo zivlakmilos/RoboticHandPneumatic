@@ -38,6 +38,7 @@ private:
     void gesture(cv::Mat &matOriginal, cv::Mat &matThreshold);
     void colorFromSamples(QVector<cv::Mat> &matRoi);
     void makeBinary(cv::Mat &matThreshold);
+    bool findContour(cv::Mat &matThreshold, std::vector<cv::Point> &contour);
     
     QLabel *m_lblOriginalImage;
     QLabel *m_lblThresholdImage;
