@@ -182,6 +182,10 @@ void WHandGesture::gesture(Mat &matOriginal, Mat &matThreshold)
         tmpContours.push_back(contour);
         drawContours(matOriginal, tmpContours, -1, Scalar(0, 255, 0), 3, 8);
         rectangle(matOriginal, boundingRect(Mat(contour)), Scalar(255, 0, 0), 3, 8);
+        
+        std::vector<std::vector<Point> > hull(1);
+        convexHull(contour, hull[0], false, false);
+        drawContours(matOriginal, hull, -1, Scalar(0, 0, 255), 3, 8);
     }
 }
 
