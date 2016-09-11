@@ -50,6 +50,7 @@ private:
     int countFingers(std::vector<cv::Point> &contour,
                      std::vector<cv::Point> &hull,
                      std::vector<cv::Vec4i> &defects);
+    float inline distance(cv::Point p1, cv::Point p2);
     
     QLabel *m_lblOriginalImage;
     QLabel *m_lblThresholdImage;

@@ -243,10 +243,15 @@ void WHandGesture::gesture(Mat &matOriginal, Mat &matThreshold)
     int fingersCuont = countFingers(contours[0], hull[0], defects);
     drawContours(matOriginal, hull, -1, Scalar(0, 0, 255), 3, 8);
     
+    /*
+     * Drawing hull and defects
+     */
     for(int i = 0; i < defects.size(); i++)
     {
-        Point pt = contours[0][defects[i].val[2]];
-        circle(matOriginal, pt, 5, Scalar(255, 0, 0), CV_FILLED);
+        Point ptStart = contours[0][defects[i].val[0]];
+        Point ptFar = contours[0][defects[i].val[2]];
+        circle(matOriginal, ptStart, 5, Scalar(255, 255, 0), CV_FILLED);
+        circle(matOriginal, ptFar, 5, Scalar(255, 0, 0), CV_FILLED);
     }
     
     std::cout << fingersCuont << std::endl;
@@ -296,7 +301,7 @@ bool WHandGesture::findContour(Mat &matThreshold, std::vector<Point> &contour)
     std::vector<std::vector<Point> > contours;
     std::vector<Vec4i> hierarcy;
     
-    findContours(matWorking, contours, hierarcy, CV_RETR_TREE, CV_CHAIN_APPROX_SIMPLE);
+    findContours(matWorking, contours, hierarcy, CV_RETR_TREE, CV_CHAIN_APPROX_NONE);
     
     int idx = -1;   // Biggest contour
     for(int i = 0; i < contours.size(); i++)
@@ -315,9 +320,7 @@ bool WHandGesture::findContour(Mat &matThreshold, std::vector<Point> &contour)
     
     contour.clear();
     for(int i = 0; i < contours[idx].size(); i++)
-    {
         contour.push_back(contours[idx][i]);
-    }
     
     return true;
 }
@@ -329,14 +332,19 @@ int WHandGesture::countFingers(std::vector<Point> &contour,
     std::vector<int> hullForDefects;
     convexHull(contour, hull, false, true);             // For drawing
     convexHull(contour, hullForDefects, false, false);  // For defects
-    convexityDefects(contour, hullForDefects, defects);
+    
+    try {
+        convexityDefects(contour, hullForDefects, defects);
+    } catch(cv::Exception ex) {
+        /*
+         * If not more than 2 hull-s then return 0 fingers
+         */
+        return 0;
+    }
     
     /*
-     * Checking if defects betwean 2 fingers
-     *  (couting fingers)
+     * Removing unnecessary defects
      */
-    int fingerCount = 0;
-    
     for(int i = 0; i < defects.size(); i++)
     {
         Point ptStart(contour[defects[i].val[0]]);
@@ -346,27 +354,31 @@ int WHandGesture::countFingers(std::vector<Point> &contour,
         /*
          * Using dot product of vectors to find angle
          */
-        float length1 = sqrt(pow(ptFar.x - ptStart.x, 2) +
-                             pow(ptFar.y - ptStart.y, 2));
-        float length2 = sqrt(pow(ptFar.x - ptStart.x, 2) +
-                             pow(ptFar.y - ptStart.y, 2));
+        float length1 = distance(ptFar, ptStart);
+        float length2 = distance(ptFar, ptEnd);
         float dotProduct = (ptStart.x - ptFar.x) * (ptStart.y - ptFar.y) +
                            (ptEnd.x - ptFar.x) * (ptEnd.y - ptFar.y);
         float angle = acos(dotProduct / (length1 * length2));
         angle = angle * 180 / CV_PI;    // Radian to degrease
         
+        Rect boundRect = boundingRect(Mat(contour));
         if(angle > 100 ||       // Checking angle and lengths
-           length1 < 50 ||
-           length2 < 50)
-            continue;
-        
-        fingerCount++;
+           length1 < boundRect.height ||
+           length2 < boundRect.height)
+        {
+            defects.erase(defects.begin() + i--);
+        }
     }
     
-    return fingerCount;
+    return defects.size() + 1;
 }
 
 void WHandGesture::sliderBlurValueChanged(int value)
 {
     m_sliderBlur->setValue(value % 2 != 0 ? value : ++value);
+}
+
+float WHandGesture::distance(Point p1, Point p2)
+{
+    return sqrt(pow(p1.x - p2.x, 2) + (pow(p1.y - p2.y, 2)));
 }
