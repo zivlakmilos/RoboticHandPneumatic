@@ -61,9 +61,12 @@ private:
     
     QSlider *m_sliderLowerColor[ColorSliderSize];
     QSlider *m_sliderUpperColor[ColorSliderSize];
+    QSlider *m_sliderBlur;
     
 private slots:
     void updateFrame(void);
+    
+    void sliderBlurValueChanged(int value);     // Calculating value for median blur (only odds)
 };
 
 #endif // _W_HAND_GESTURE_H_

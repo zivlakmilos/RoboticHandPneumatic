@@ -55,6 +55,7 @@ void WHandGesture::setupGui(void)
     QLabel *lblHule = new QLabel(tr("Hule"));
     QLabel *lblSaturation = new QLabel(tr("Saturation"));
     QLabel *lblValue = new QLabel(tr("Value"));
+    QLabel *lblBlur = new QLabel(tr("Blur"));
     
     m_sliderLowerColor[ColorSliderHule] = new QSlider(Qt::Horizontal);
     m_sliderLowerColor[ColorSliderHule]->setRange(-360, 0);
@@ -77,6 +78,19 @@ void WHandGesture::setupGui(void)
     m_sliderUpperColor[ColorSliderValue]->setRange(0, 100);
     m_sliderUpperColor[ColorSliderValue]->setValue(80);
     
+    m_sliderBlur = new QSlider(Qt::Horizontal);
+    m_sliderBlur->setRange(3, 50);
+    m_sliderBlur->setTickInterval(2);
+    m_sliderBlur->setValue(7);
+    
+    /*
+     * Connect signals and slots
+     *  (setup handlers)
+     */
+    
+    connect(m_sliderBlur, SIGNAL(valueChanged(int)),
+            this, SLOT(sliderBlurValueChanged(int)));
+    
     /*
      * Lay down components
      */
@@ -95,6 +109,8 @@ void WHandGesture::setupGui(void)
     layoutSliders->addWidget(m_sliderUpperColor[ColorSliderSaturation], 2, 2);
     layoutSliders->addWidget(m_sliderLowerColor[ColorSliderValue], 3, 1);
     layoutSliders->addWidget(m_sliderUpperColor[ColorSliderValue], 3, 2);
+    layoutSliders->addWidget(lblBlur, 4, 0);
+    layoutSliders->addWidget(m_sliderBlur, 4, 1, 1, 2);
     
     layoutMain->addLayout(layoutSliders);
     layoutMain->addLayout(layoutImages);
@@ -271,7 +287,7 @@ void WHandGesture::makeBinary(Mat &matThreshold)
     for(i = 1; i < matBinarys.size(); i++)
         matThreshold += matBinarys[0];
     
-    medianBlur(matThreshold, matThreshold, 7);
+    medianBlur(matThreshold, matThreshold, m_sliderBlur->value());
 }
 
 bool WHandGesture::findContour(Mat &matThreshold, std::vector<Point> &contour)
@@ -348,4 +364,9 @@ int WHandGesture::countFingers(std::vector<Point> &contour,
     }
     
     return fingerCount;
+}
+
+void WHandGesture::sliderBlurValueChanged(int value)
+{
+    m_sliderBlur->setValue(value % 2 != 0 ? value : ++value);
 }
