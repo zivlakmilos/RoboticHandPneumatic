@@ -39,6 +39,9 @@ private:
     void colorFromSamples(QVector<cv::Mat> &matRoi);
     void makeBinary(cv::Mat &matThreshold);
     bool findContour(cv::Mat &matThreshold, std::vector<cv::Point> &contour);
+    int countFingers(std::vector<cv::Point> &contour,
+                     std::vector<cv::Point> &hull,
+                     std::vector<cv::Vec4i> &defects);
     
     QLabel *m_lblOriginalImage;
     QLabel *m_lblThresholdImage;

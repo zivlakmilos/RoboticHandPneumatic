@@ -173,20 +173,27 @@ void WHandGesture::colorFromSamples(QVector<Mat> &matRoi)
 
 void WHandGesture::gesture(Mat &matOriginal, Mat &matThreshold)
 {
-    std::vector<Point> contour;
+    std::vector<std::vector<Point> > contours(1);
     
     makeBinary(matThreshold);
-    if(findContour(matThreshold, contour))
+    if(!findContour(matThreshold, contours[0]))
+        return;
+    
+    drawContours(matOriginal, contours, -1, Scalar(0, 255, 0), 3, 8);
+    rectangle(matOriginal, boundingRect(Mat(contours[0])), Scalar(255, 0, 0), 3, 8);
+    
+    std::vector<std::vector<Point> > hull(1);
+    std::vector<Vec4i> defects;
+    int fingersCuont = countFingers(contours[0], hull[0], defects);
+    drawContours(matOriginal, hull, -1, Scalar(0, 0, 255), 3, 8);
+    
+    for(int i = 0; i < defects.size(); i++)
     {
-        std::vector<std::vector<Point> > tmpContours;
-        tmpContours.push_back(contour);
-        drawContours(matOriginal, tmpContours, -1, Scalar(0, 255, 0), 3, 8);
-        rectangle(matOriginal, boundingRect(Mat(contour)), Scalar(255, 0, 0), 3, 8);
-        
-        std::vector<std::vector<Point> > hull(1);
-        convexHull(contour, hull[0], false, false);
-        drawContours(matOriginal, hull, -1, Scalar(0, 0, 255), 3, 8);
+        Point pt = contours[0][defects[i].val[2]];
+        circle(matOriginal, pt, 5, Scalar(255, 0, 0), CV_FILLED);
     }
+    
+    std::cout << fingersCuont << std::endl;
 }
 
 void WHandGesture::keyPressEvent(QKeyEvent *event)
@@ -257,4 +264,48 @@ bool WHandGesture::findContour(Mat &matThreshold, std::vector<Point> &contour)
     }
     
     return true;
+}
+
+int WHandGesture::countFingers(std::vector<Point> &contour,
+                               std::vector<Point> &hull,
+                               std::vector<Vec4i> &defects)
+{
+    std::vector<int> hullForDefects;
+    convexHull(contour, hull, false, true);             // For drawing
+    convexHull(contour, hullForDefects, false, false);  // For defects
+    convexityDefects(contour, hullForDefects, defects);
+    
+    /*
+     * Checking if defects betwean 2 fingers
+     *  (couting fingers)
+     */
+    int fingerCount = 0;
+    
+    for(int i = 0; i < defects.size(); i++)
+    {
+        Point ptStart(contour[defects[i].val[0]]);
+        Point ptEnd(contour[defects[i].val[1]]);
+        Point ptFar(contour[defects[i].val[2]]);
+        
+        /*
+         * Using dot product of vectors to find angle
+         */
+        float length1 = sqrt(pow(ptFar.x - ptStart.x, 2) +
+                             pow(ptFar.y - ptStart.y, 2));
+        float length2 = sqrt(pow(ptFar.x - ptStart.x, 2) +
+                             pow(ptFar.y - ptStart.y, 2));
+        float dotProduct = (ptStart.x - ptFar.x) * (ptStart.y - ptFar.y) +
+                           (ptEnd.x - ptFar.x) * (ptEnd.y - ptFar.y);
+        float angle = acos(dotProduct / (length1 * length2));
+        angle = angle * 180 / CV_PI;    // Radian to degrease
+        
+        if(angle > 100 ||       // Checking angle and lengths
+           length1 < 50 ||
+           length2 < 50 ||)
+            continue;
+        
+        fingerCount++;
+    }
+    
+    return fingerCount;
 }
