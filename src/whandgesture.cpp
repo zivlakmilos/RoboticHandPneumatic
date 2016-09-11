@@ -11,9 +11,7 @@ using namespace cv;
 WHandGesture::WHandGesture(QWidget *parent)
     : QWidget(parent),
       m_capture(0),
-      m_mode(ModeSampling),
-      m_lowerColor(12, 30, 80),
-      m_upperColor(7, 40, 80)
+      m_mode(ModeSampling)
 {
     /*
      * Setup timer for update frames
@@ -43,6 +41,7 @@ void WHandGesture::setupGui(void)
     
     QVBoxLayout *layoutMain = new QVBoxLayout(this);
     QHBoxLayout *layoutImages = new QHBoxLayout;
+    QGridLayout *layoutSliders = new QGridLayout;
     
     /*
      * Create components
@@ -51,6 +50,33 @@ void WHandGesture::setupGui(void)
     m_lblOriginalImage = new QLabel(this);
     m_lblThresholdImage = new QLabel(this);
     
+    QLabel *lblLowBound = new QLabel(tr("Low bound"));
+    QLabel *lblHigthBound = new QLabel(tr("High bound"));
+    QLabel *lblHule = new QLabel(tr("Hule"));
+    QLabel *lblSaturation = new QLabel(tr("Saturation"));
+    QLabel *lblValue = new QLabel(tr("Value"));
+    
+    m_sliderLowerColor[ColorSliderHule] = new QSlider(Qt::Horizontal);
+    m_sliderLowerColor[ColorSliderHule]->setRange(-360, 0);
+    m_sliderLowerColor[ColorSliderHule]->setValue(-12);
+    m_sliderUpperColor[ColorSliderHule] = new QSlider(Qt::Horizontal);
+    m_sliderUpperColor[ColorSliderHule]->setRange(0, 360);
+    m_sliderUpperColor[ColorSliderHule]->setValue(7);
+    
+    m_sliderLowerColor[ColorSliderSaturation] = new QSlider(Qt::Horizontal);
+    m_sliderLowerColor[ColorSliderSaturation]->setRange(-100, 0);
+    m_sliderLowerColor[ColorSliderSaturation]->setValue(-30);
+    m_sliderUpperColor[ColorSliderSaturation] = new QSlider(Qt::Horizontal);
+    m_sliderUpperColor[ColorSliderSaturation]->setRange(0, 100);
+    m_sliderUpperColor[ColorSliderSaturation]->setValue(40);
+    
+    m_sliderLowerColor[ColorSliderValue] = new QSlider(Qt::Horizontal);
+    m_sliderLowerColor[ColorSliderValue]->setRange(-100, 0);
+    m_sliderLowerColor[ColorSliderValue]->setValue(-80);
+    m_sliderUpperColor[ColorSliderValue] = new QSlider(Qt::Horizontal);
+    m_sliderUpperColor[ColorSliderValue]->setRange(0, 100);
+    m_sliderUpperColor[ColorSliderValue]->setValue(80);
+    
     /*
      * Lay down components
      */
@@ -58,7 +84,21 @@ void WHandGesture::setupGui(void)
     layoutImages->addWidget(m_lblOriginalImage);
     layoutImages->addWidget(m_lblThresholdImage);
     
+    layoutSliders->addWidget(lblLowBound, 0, 1, Qt::AlignCenter);
+    layoutSliders->addWidget(lblHigthBound, 0, 2, Qt::AlignCenter);
+    layoutSliders->addWidget(lblHule, 1, 0);
+    layoutSliders->addWidget(lblSaturation, 2, 0);
+    layoutSliders->addWidget(lblValue, 3, 0);
+    layoutSliders->addWidget(m_sliderLowerColor[ColorSliderHule], 1, 1);
+    layoutSliders->addWidget(m_sliderUpperColor[ColorSliderHule], 1, 2);
+    layoutSliders->addWidget(m_sliderLowerColor[ColorSliderSaturation], 2, 1);
+    layoutSliders->addWidget(m_sliderUpperColor[ColorSliderSaturation], 2, 2);
+    layoutSliders->addWidget(m_sliderLowerColor[ColorSliderValue], 3, 1);
+    layoutSliders->addWidget(m_sliderUpperColor[ColorSliderValue], 3, 2);
+    
+    layoutMain->addLayout(layoutSliders);
     layoutMain->addLayout(layoutImages);
+    layoutMain->setStretch(1, 1);
 }
 
 void WHandGesture::start(void)
@@ -217,12 +257,12 @@ void WHandGesture::makeBinary(Mat &matThreshold)
     QVector<Mat> matBinarys;
     for(i = 0; i < m_color.size(); i++)
     {
-        Scalar lowerColor(m_color[0][0] - m_lowerColor[0],
-                          m_color[0][1] - m_lowerColor[1],
-                          m_color[0][2] - m_lowerColor[2]);
-        Scalar upperColor(m_color[0][0] + m_upperColor[0],
-                          m_color[0][1] + m_upperColor[1],
-                          m_color[0][2] + m_upperColor[2]);
+        Scalar lowerColor(m_color[0][0] + m_sliderLowerColor[ColorSliderHule]->value(),
+                          m_color[0][1] + m_sliderLowerColor[ColorSliderSaturation]->value(),
+                          m_color[0][2] + m_sliderLowerColor[ColorSliderValue]->value());
+        Scalar upperColor(m_color[0][0] + m_sliderUpperColor[ColorSliderHule]->value(),
+                          m_color[0][1] + m_sliderUpperColor[ColorSliderSaturation]->value(),
+                          m_color[0][2] + m_sliderUpperColor[ColorSliderValue]->value());
         matBinarys.push_back(Mat(matThreshold.rows, matThreshold.cols, CV_8U));
         inRange(matThreshold, lowerColor, upperColor, matBinarys[i]);
     }
@@ -301,7 +341,7 @@ int WHandGesture::countFingers(std::vector<Point> &contour,
         
         if(angle > 100 ||       // Checking angle and lengths
            length1 < 50 ||
-           length2 < 50 ||)
+           length2 < 50)
             continue;
         
         fingerCount++;

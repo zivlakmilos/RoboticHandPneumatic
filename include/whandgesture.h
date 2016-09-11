@@ -7,6 +7,7 @@
 
 class QLabel;
 class QTimer;
+class QSlider;
 
 class WHandGesture : public QWidget
 {
@@ -26,6 +27,13 @@ public:
     enum SamplingRectangle {
         SamplingRectangleWidth = 15,
         SamplingRectangleHeight = 15
+    };
+    
+    enum ColorSliders {
+        ColorSliderHule = 0,
+        ColorSliderSaturation,
+        ColorSliderValue,
+        ColorSliderSize         // Must be last!
     };
     
 protected:
@@ -50,8 +58,9 @@ private:
     cv::VideoCapture m_capture;
     Mode m_mode;
     QVector<cv::Scalar> m_color;
-    cv::Scalar m_lowerColor;
-    cv::Scalar m_upperColor;
+    
+    QSlider *m_sliderLowerColor[ColorSliderSize];
+    QSlider *m_sliderUpperColor[ColorSliderSize];
     
 private slots:
     void updateFrame(void);
