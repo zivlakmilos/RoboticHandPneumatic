@@ -246,7 +246,7 @@ void WHandGesture::gesture(Mat &matOriginal, Mat &matThreshold)
     
     std::vector<std::vector<Point> > hull(1);
     std::vector<Vec4i> defects;
-    int fingersCuont = countFingers(contours[0], hull[0], defects);
+    int fingerCount = countFingers(contours[0], hull[0], defects);
     drawContours(matOriginal, hull, -1, Scalar(0, 0, 255), 3, 8);
     
     /*
@@ -262,8 +262,9 @@ void WHandGesture::gesture(Mat &matOriginal, Mat &matThreshold)
         circle(matOriginal, ptFar, 5, Scalar(255, 0, 0), CV_FILLED);
     }
     
-    if(fingersCuont > 3 && m_fingerCount <= 3)
+    if(fingerCount > 3 && m_fingerCount <= 3)
         m_track = !m_track;
+    m_fingerCount = fingerCount;
     
     trackHand(contours[0]);
     Scalar centerColor = m_track ? Scalar(255, 255, 255) : Scalar(0, 0, 0);
