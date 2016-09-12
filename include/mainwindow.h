@@ -18,11 +18,14 @@ private:
     void setupGui(void);
     
     QAction *m_actionStart;
+    QAction *m_actionAbout;
+    QAction *m_actionExit;
     
     WHandGesture *m_centralWidget;
     
 private slots:
     void startHandGesture(void);
+    void about(void);
 };
 
 #endif // _MAIN_WINDOW_H_
