@@ -266,7 +266,8 @@ void WHandGesture::gesture(Mat &matOriginal, Mat &matThreshold)
         m_track = !m_track;
     
     trackHand(contours[0]);
-    circle(matOriginal, m_handCenter, 5, Scalar(0, 0, 0), CV_FILLED);
+    Scalar centerColor = m_track ? Scalar(255, 255, 255) : Scalar(0, 0, 0);
+    circle(matOriginal, m_handCenter, 5, centerColor, CV_FILLED);
 }
 
 void WHandGesture::keyPressEvent(QKeyEvent *event)
