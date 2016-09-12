@@ -51,6 +51,7 @@ private:
                      std::vector<cv::Point> &hull,
                      std::vector<cv::Vec4i> &defects);
     float inline distance(cv::Point p1, cv::Point p2);
+    void trackHand(std::vector<cv::Point> & contour);
     
     QLabel *m_lblOriginalImage;
     QLabel *m_lblThresholdImage;
@@ -59,6 +60,11 @@ private:
     cv::VideoCapture m_capture;
     Mode m_mode;
     QVector<cv::Scalar> m_color;
+    cv::Point2f m_handCenter;
+    float m_displacementX;
+    float m_displacementY;
+    int m_fingerCount;
+    bool m_track;
     
     QSlider *m_sliderLowerColor[ColorSliderSize];
     QSlider *m_sliderUpperColor[ColorSliderSize];

@@ -11,7 +11,12 @@ using namespace cv;
 WHandGesture::WHandGesture(QWidget *parent)
     : QWidget(parent),
       m_capture(0),
-      m_mode(ModeSampling)
+      m_mode(ModeSampling),
+      m_handCenter(-1.0f, -1.0f),
+      m_displacementX(0),
+      m_displacementY(0),
+      m_fingerCount(0),
+      m_track(false)
 {
     /*
      * Setup timer for update frames
@@ -204,6 +209,7 @@ void WHandGesture::sampling(Mat &matOriginal, Mat &matThreshold)
     roi.push_back(Rect(centerX - 100, centerY - 50, SamplingRectangleWidth, SamplingRectangleHeight));
     roi.push_back(Rect(centerX + 25, centerY - 25, SamplingRectangleWidth, SamplingRectangleHeight));
     roi.push_back(Rect(centerX + 25, centerY + 25, SamplingRectangleWidth, SamplingRectangleHeight));
+    roi.push_back(Rect(centerX - 25, centerY, SamplingRectangleWidth, SamplingRectangleHeight));
     
     for(int i = 0; i < roi.size(); i++)
     {
@@ -249,12 +255,18 @@ void WHandGesture::gesture(Mat &matOriginal, Mat &matThreshold)
     for(int i = 0; i < defects.size(); i++)
     {
         Point ptStart = contours[0][defects[i].val[0]];
+        Point ptEnd = contours[0][defects[i].val[1]];
         Point ptFar = contours[0][defects[i].val[2]];
         circle(matOriginal, ptStart, 5, Scalar(255, 255, 0), CV_FILLED);
+        circle(matOriginal, ptEnd, 5, Scalar(255, 255, 0), CV_FILLED);
         circle(matOriginal, ptFar, 5, Scalar(255, 0, 0), CV_FILLED);
     }
     
-    std::cout << fingersCuont << std::endl;
+    if(fingersCuont > 3 && m_fingerCount <= 3)
+        m_track = !m_track;
+    
+    trackHand(contours[0]);
+    circle(matOriginal, m_handCenter, 5, Scalar(0, 0, 0), CV_FILLED);
 }
 
 void WHandGesture::keyPressEvent(QKeyEvent *event)
@@ -362,9 +374,10 @@ int WHandGesture::countFingers(std::vector<Point> &contour,
         angle = angle * 180 / CV_PI;    // Radian to degrease
         
         Rect boundRect = boundingRect(Mat(contour));
+        float depth = defects[i].val[3] / 256.0f;
         if(angle > 100 ||       // Checking angle and lengths
-           length1 < boundRect.height ||
-           length2 < boundRect.height)
+           depth < boundRect.height / 5 ||
+           depth > boundRect.height / 2)
         {
             defects.erase(defects.begin() + i--);
         }
@@ -381,4 +394,40 @@ void WHandGesture::sliderBlurValueChanged(int value)
 float WHandGesture::distance(Point p1, Point p2)
 {
     return sqrt(pow(p1.x - p2.x, 2) + (pow(p1.y - p2.y, 2)));
+}
+
+void WHandGesture::trackHand(std::vector<Point> &contour)
+{
+    Moments contourMoments = moments(contour, false);
+    Point2f oldCenter = m_handCenter;
+    m_handCenter.x = contourMoments.m10 / contourMoments.m00;
+    m_handCenter.y = contourMoments.m01 / contourMoments.m00;
+    
+    if(!m_track || (oldCenter.x < 0 && oldCenter.y < 0))
+        return;
+    
+    float deltaX = m_handCenter.x - oldCenter.x;
+    float deltaY = m_handCenter.y - oldCenter.y;
+    
+    m_displacementX += deltaX;
+    m_displacementY += deltaY;
+    
+    if(m_displacementX > 200)
+    {
+        std::cout << "Desno" << std::endl;
+        m_displacementX = 0;
+    } else if(-m_displacementX > 200)
+    {
+        std::cout << "Levo" << std::endl;
+        m_displacementX = 0;
+    }
+    if(m_displacementY > 100)
+    {
+        std::cout << "Dole" << std::endl;
+        m_displacementY = 0;
+    } else if(-m_displacementY > 100)
+    {
+        std::cout << "Gore" << std::endl;
+        m_displacementY = 0;
+    }
 }
