@@ -36,6 +36,13 @@ public:
         ColorSliderSize         // Must be last!
     };
     
+    enum HandMove {
+        HandMoveRight = 11,
+        HandMoveLeft = 10,
+        HandMoveDown = 21,
+        HandMoveUp = 20
+    };
+    
 protected:
     virtual void keyPressEvent(QKeyEvent *event);
     
@@ -74,6 +81,9 @@ private slots:
     void updateFrame(void);
     
     void sliderBlurValueChanged(int value);     // Calculating value for median blur (only odds)
+    
+signals:
+    void handMoved(int move);
 };
 
 #endif // _W_HAND_GESTURE_H_

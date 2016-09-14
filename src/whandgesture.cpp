@@ -417,19 +417,23 @@ void WHandGesture::trackHand(std::vector<Point> &contour)
     if(m_displacementX > 200)
     {
         std::cout << "Desno" << std::endl;
+        emit handMoved(HandMoveRight);
         m_displacementX = 0;
     } else if(-m_displacementX > 200)
     {
         std::cout << "Levo" << std::endl;
+        emit handMoved(HandMoveLeft);
         m_displacementX = 0;
     }
     if(m_displacementY > 100)
     {
         std::cout << "Dole" << std::endl;
+        emit handMoved(HandMoveDown);
         m_displacementY = 0;
     } else if(-m_displacementY > 100)
     {
         std::cout << "Gore" << std::endl;
+        emit handMoved(HandMoveUp);
         m_displacementY = 0;
     }
 }
