@@ -66,7 +66,6 @@ private:
     
     cv::VideoCapture m_capture;
     Mode m_mode;
-    QVector<cv::Scalar> m_color;
     cv::Point2f m_handCenter;
     float m_displacementX;
     float m_displacementY;

@@ -63,29 +63,28 @@ void WHandGesture::setupGui(void)
     QLabel *lblBlur = new QLabel(tr("Blur"));
     
     m_sliderLowerColor[ColorSliderHule] = new QSlider(Qt::Horizontal);
-    m_sliderLowerColor[ColorSliderHule]->setRange(-360, 0);
-    m_sliderLowerColor[ColorSliderHule]->setValue(-12);
+    m_sliderLowerColor[ColorSliderHule]->setRange(0, 255);
+    m_sliderLowerColor[ColorSliderHule]->setValue(0);
     m_sliderUpperColor[ColorSliderHule] = new QSlider(Qt::Horizontal);
-    m_sliderUpperColor[ColorSliderHule]->setRange(0, 360);
-    m_sliderUpperColor[ColorSliderHule]->setValue(7);
+    m_sliderUpperColor[ColorSliderHule]->setRange(0, 255);
+    m_sliderUpperColor[ColorSliderHule]->setValue(255);
     
     m_sliderLowerColor[ColorSliderSaturation] = new QSlider(Qt::Horizontal);
-    m_sliderLowerColor[ColorSliderSaturation]->setRange(-100, 0);
-    m_sliderLowerColor[ColorSliderSaturation]->setValue(-30);
+    m_sliderLowerColor[ColorSliderSaturation]->setRange(0, 255);
+    m_sliderLowerColor[ColorSliderSaturation]->setValue(-0);
     m_sliderUpperColor[ColorSliderSaturation] = new QSlider(Qt::Horizontal);
-    m_sliderUpperColor[ColorSliderSaturation]->setRange(0, 100);
-    m_sliderUpperColor[ColorSliderSaturation]->setValue(40);
+    m_sliderUpperColor[ColorSliderSaturation]->setRange(0, 255);
+    m_sliderUpperColor[ColorSliderSaturation]->setValue(255);
     
     m_sliderLowerColor[ColorSliderValue] = new QSlider(Qt::Horizontal);
-    m_sliderLowerColor[ColorSliderValue]->setRange(-100, 0);
-    m_sliderLowerColor[ColorSliderValue]->setValue(-80);
+    m_sliderLowerColor[ColorSliderValue]->setRange(0, 255);
+    m_sliderLowerColor[ColorSliderValue]->setValue(0);
     m_sliderUpperColor[ColorSliderValue] = new QSlider(Qt::Horizontal);
-    m_sliderUpperColor[ColorSliderValue]->setRange(0, 100);
-    m_sliderUpperColor[ColorSliderValue]->setValue(80);
+    m_sliderUpperColor[ColorSliderValue]->setRange(0, 255);
+    m_sliderUpperColor[ColorSliderValue]->setValue(255);
     
     m_sliderBlur = new QSlider(Qt::Horizontal);
     m_sliderBlur->setRange(3, 50);
-    m_sliderBlur->setTickInterval(2);
     m_sliderBlur->setValue(7);
     
     /*
@@ -198,39 +197,10 @@ void WHandGesture::updateFrame(void)
 
 void WHandGesture::sampling(Mat &matOriginal, Mat &matThreshold)
 {
-    int centerX = matOriginal.cols / 2;
-    int centerY = matOriginal.rows / 2;
-    QVector<Rect> roi;              // Region of interest
-    QVector<Mat> matRoi;            // Mat of roi
-    
-    roi.push_back(Rect(centerX, centerY, SamplingRectangleWidth, SamplingRectangleHeight));
-    roi.push_back(Rect(centerX, centerY - 100, SamplingRectangleWidth, SamplingRectangleHeight));
-    roi.push_back(Rect(centerX, centerY - 200, SamplingRectangleWidth, SamplingRectangleHeight));
-    roi.push_back(Rect(centerX - 100, centerY - 50, SamplingRectangleWidth, SamplingRectangleHeight));
-    roi.push_back(Rect(centerX + 25, centerY - 25, SamplingRectangleWidth, SamplingRectangleHeight));
-    roi.push_back(Rect(centerX + 25, centerY + 25, SamplingRectangleWidth, SamplingRectangleHeight));
-    roi.push_back(Rect(centerX - 25, centerY, SamplingRectangleWidth, SamplingRectangleHeight));
-    
-    for(int i = 0; i < roi.size(); i++)
-    {
-        rectangle(matOriginal, roi[i], Scalar(255, 0, 0), 2);
-        rectangle(matThreshold, roi[i], Scalar(255, 0, 0), 2);
-        Mat matR = matThreshold(Range(roi[i].x, roi[i].x + roi[i].width),
-                                Range(roi[i].y, roi[i].y + roi[i].height));
-        matRoi.push_back(matR);
-    }
-    
-    colorFromSamples(matRoi);
-}
-
-void WHandGesture::colorFromSamples(QVector<Mat> &matRoi)
-{
-    m_color.clear();
-    for(int i = 0; i < matRoi.size(); i++)
-    {
-        Mat1b mask(matRoi[i].rows, matRoi[i].cols);
-        m_color.push_back(mean(matRoi[i], mask));
-    }
+    /*
+     * TODO:
+     *  Remove this method or do some testing code
+     */
 }
 
 void WHandGesture::gesture(Mat &matOriginal, Mat &matThreshold)
@@ -290,21 +260,13 @@ void WHandGesture::makeBinary(Mat &matThreshold)
     int i;
     
     QVector<Mat> matBinarys;
-    for(i = 0; i < m_color.size(); i++)
-    {
-        Scalar lowerColor(m_color[0][0] + m_sliderLowerColor[ColorSliderHule]->value(),
-                          m_color[0][1] + m_sliderLowerColor[ColorSliderSaturation]->value(),
-                          m_color[0][2] + m_sliderLowerColor[ColorSliderValue]->value());
-        Scalar upperColor(m_color[0][0] + m_sliderUpperColor[ColorSliderHule]->value(),
-                          m_color[0][1] + m_sliderUpperColor[ColorSliderSaturation]->value(),
-                          m_color[0][2] + m_sliderUpperColor[ColorSliderValue]->value());
-        matBinarys.push_back(Mat(matThreshold.rows, matThreshold.cols, CV_8U));
-        inRange(matThreshold, lowerColor, upperColor, matBinarys[i]);
-    }
-    
-    matThreshold = matBinarys[0].clone();
-    for(i = 1; i < matBinarys.size(); i++)
-        matThreshold += matBinarys[0];
+    Scalar lowerColor(m_sliderLowerColor[ColorSliderHule]->value(),
+                      m_sliderLowerColor[ColorSliderSaturation]->value(),
+                      m_sliderLowerColor[ColorSliderValue]->value());
+    Scalar upperColor(m_sliderUpperColor[ColorSliderHule]->value(),
+                      m_sliderUpperColor[ColorSliderSaturation]->value(),
+                      m_sliderUpperColor[ColorSliderValue]->value());
+    inRange(matThreshold, lowerColor, upperColor, matThreshold);
     
     medianBlur(matThreshold, matThreshold, m_sliderBlur->value());
 }
